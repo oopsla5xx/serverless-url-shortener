@@ -1,4 +1,4 @@
-package main
+package shortener
 
 import (
 	"context"
@@ -7,12 +7,8 @@ import (
 	"fmt"
 	"log"
 	"net/url"
-	"os"
-	"strings"
 
-	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/smithy-go"
 )
@@ -33,24 +29,14 @@ const (
 	maxURLLen  = 2000
 )
 
-var (
-	s3Client   *s3.Client
-	bucketName string
-	baseURL    string
-)
+type Putter interface {
+	PutObject(ctx context.Context, in *s3.PutObjectInput, optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error)
+}
 
-func init() {
-	bucketName = os.Getenv("BUCKET")
-	baseURL = strings.TrimRight(os.Getenv("BASE_URL"), "/")
-	if bucketName == "" || baseURL == "" {
-		log.Fatal("missing required env: BUCKET, BASE_URL")
-	}
-
-	cfg, err := config.LoadDefaultConfig(context.Background())
-	if err != nil {
-		log.Fatalf("unable to load SDK config: %v", err)
-	}
-	s3Client = s3.NewFromConfig(cfg)
+type Service struct {
+	S3      Putter
+	Bucket  string
+	BaseURL string
 }
 
 func code(length int) (string, error) {
@@ -87,7 +73,7 @@ func isConflict(err error) bool {
 	return false
 }
 
-func handleRequest(ctx context.Context, req Request) (Response, error) {
+func (s *Service) Shorten(ctx context.Context, req Request) (Response, error) {
 	if err := validateURL(req.OriginalURL); err != nil {
 		return Response{}, err
 	}
@@ -98,15 +84,15 @@ func handleRequest(ctx context.Context, req Request) (Response, error) {
 			return Response{}, err
 		}
 
-		_, err = s3Client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket:                  aws.String(bucketName),
+		_, err = s.S3.PutObject(ctx, &s3.PutObjectInput{
+			Bucket:                  aws.String(s.Bucket),
 			Key:                     aws.String(key),
 			WebsiteRedirectLocation: aws.String(req.OriginalURL),
 			IfNoneMatch:             aws.String("*"),
 		})
 		if err == nil {
 			log.Printf("created %s -> %s", key, req.OriginalURL)
-			return Response{Code: key, ShortURL: baseURL + "/" + key}, nil
+			return Response{Code: key, ShortURL: s.BaseURL + "/" + key}, nil
 		}
 		if isConflict(err) {
 			continue
@@ -116,8 +102,4 @@ func handleRequest(ctx context.Context, req Request) (Response, error) {
 	}
 
 	return Response{}, fmt.Errorf("could not generate a unique code after %d attempts", maxRetries)
-}
-
-func main() {
-	lambda.Start(handleRequest)
 }
