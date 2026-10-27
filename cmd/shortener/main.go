@@ -16,8 +16,9 @@ import (
 func main() {
 	bucket := os.Getenv("BUCKET")
 	baseURL := strings.TrimRight(os.Getenv("BASE_URL"), "/")
-	if bucket == "" || baseURL == "" {
-		log.Fatal("missing required env: BUCKET, BASE_URL")
+	apiKey := os.Getenv("API_KEY")
+	if bucket == "" || baseURL == "" || apiKey == "" {
+		log.Fatal("missing required env: BUCKET, BASE_URL, API_KEY")
 	}
 
 	cfg, err := config.LoadDefaultConfig(context.Background())
@@ -26,5 +27,6 @@ func main() {
 	}
 
 	svc := &shortener.Service{S3: s3.NewFromConfig(cfg), Bucket: bucket, BaseURL: baseURL}
-	lambda.Start(svc.Shorten)
+	h := &shortener.HTTPHandler{Service: svc, APIKey: apiKey}
+	lambda.Start(h.Handle)
 }
