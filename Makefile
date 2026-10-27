@@ -36,9 +36,9 @@ deploy: check zip
 	aws lambda wait function-updated-v2 --function-name $(FUNCTION)
 
 config:
-	@test -n "$(BUCKET)" -a -n "$(BASE_URL)" || (echo "BUCKET/BASE_URL chưa set trong .env" >&2; exit 1)
+	@test -n "$(BUCKET)" -a -n "$(BASE_URL)" -a -n "$(API_KEY)" || (echo "BUCKET/BASE_URL/API_KEY must be set in .env" >&2; exit 1)
 	aws lambda update-function-configuration --function-name $(FUNCTION) \
-		--environment '{"Variables":{"BUCKET":"$(BUCKET)","BASE_URL":"$(BASE_URL)"}}' \
+		--environment '{"Variables":{"BUCKET":"$(BUCKET)","BASE_URL":"$(BASE_URL)","API_KEY":"$(API_KEY)"}}' \
 		--query 'LastUpdateStatus' --output text
 	aws lambda wait function-updated-v2 --function-name $(FUNCTION)
 

@@ -18,6 +18,7 @@ jobs:
       FUNCTION: ${{ vars.FUNCTION }}
       BUCKET: ${{ vars.BUCKET }}
       BASE_URL: ${{ vars.BASE_URL }}
+      API_KEY: ${{ secrets.API_KEY }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
@@ -28,5 +29,6 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ vars.AWS_REGION }}
-      - run: make deploy
+      # config first: new code requires API_KEY, so set env before shipping code
       - run: make config
+      - run: make deploy

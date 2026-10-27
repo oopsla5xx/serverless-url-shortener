@@ -29,6 +29,8 @@ const (
 	maxURLLen  = 2000
 )
 
+var ErrInvalidURL = errors.New("invalid original_url")
+
 type Putter interface {
 	PutObject(ctx context.Context, in *s3.PutObjectInput, optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error)
 }
@@ -52,14 +54,14 @@ func code(length int) (string, error) {
 
 func validateURL(raw string) error {
 	if raw == "" || len(raw) > maxURLLen {
-		return fmt.Errorf("original_url is empty or longer than %d chars", maxURLLen)
+		return fmt.Errorf("%w: empty or longer than %d chars", ErrInvalidURL, maxURLLen)
 	}
 	u, err := url.Parse(raw)
 	if err != nil {
-		return fmt.Errorf("invalid original_url: %w", err)
+		return fmt.Errorf("%w: %v", ErrInvalidURL, err)
 	}
 	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-		return errors.New("original_url must be an absolute http/https URL")
+		return fmt.Errorf("%w: must be an absolute http/https URL", ErrInvalidURL)
 	}
 	return nil
 }
