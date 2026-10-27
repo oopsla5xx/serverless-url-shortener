@@ -29,6 +29,6 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ vars.AWS_REGION }}
-      # config trước: code mới bắt buộc có API_KEY, set env trước để không có cold start thiếu biến
+      # config first: new code requires API_KEY, so set env before shipping code
       - run: make config
       - run: make deploy

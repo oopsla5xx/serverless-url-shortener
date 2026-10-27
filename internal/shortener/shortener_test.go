@@ -10,7 +10,7 @@ import (
 	"github.com/aws/smithy-go"
 )
 
-// fakeS3 trả lần lượt các lỗi trong errs, hết danh sách thì thành công.
+// fakeS3 returns errs in order, then succeeds.
 type fakeS3 struct {
 	errs  []error
 	calls []*s3.PutObjectInput

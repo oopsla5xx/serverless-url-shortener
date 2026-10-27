@@ -26,7 +26,7 @@ func TestHandle(t *testing.T) {
 
 	cases := []struct {
 		name    string
-		apiKey  string // key cấu hình trên Lambda
+		apiKey  string // key configured on the Lambda
 		req     events.LambdaFunctionURLRequest
 		s3Err   error
 		status  int
